@@ -37,7 +37,7 @@ class Application(object):
         return response(environ, start_response)
         
     def bruker2dicom(self, request):
-        data = json.loads(request.get_data())
+        data = json.loads(request.get_data().decode())
         
         source = data.get("source")
         if source is None:
@@ -52,7 +52,7 @@ class Application(object):
         return self._run(["bruker2dicom", "convert", source, destination])
     
     def dicom2nifti(self, request):
-        data = json.loads(request.get_data())
+        data = json.loads(request.get_data().decode())
         
         source = data.get("source")
         if source is None:
