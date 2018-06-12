@@ -44,33 +44,82 @@ class Application(object):
         
     def bruker2dicom(self, request):
         data = json.loads(request.get_data().decode())
+        self._parse_request(
+            data, {
+                "source": {
+                    "required": True, "type": str,
+                    "validator": lambda x: (
+                        None if os.path.isdir(x) else 
+                        werkzeug.exceptions.NotFound(
+                            "No such directory: {}".format(x))) },
+                "destination": {
+                    "required": True, "type": str },
+                "dicomdir": {
+                    "required": False, "type": bool, "default": False },
+                "multiframe": {
+                    "required": False, "type": bool, "default": False }
+            })
         
-        source = data.get("source")
-        if source is None:
-            raise werkzeug.exceptions.BadRequest("Missing source")
-        if not os.path.isdir(source):
-            raise werkzeug.exceptions.NotFound("No such directory: {}".format(source))
+        arguments = ["convert", data["source"], data["destination"]]
+        if data["dicomdir"]:
+            arguments.append("--dicomdir")
+        if data["multiframe"]:
+            arguments.append("--multiframe")
         
-        destination = data.get("destination")
-        if destination is None:
-            raise werkzeug.exceptions.BadRequest("Missing destination")
-        
-        return self._run(["bruker2dicom", "convert", source, destination])
+        return self._run(["bruker2dicom"]+arguments)
     
     def dicom2nifti(self, request):
         data = json.loads(request.get_data().decode())
+        self._parse_request(
+            data, {
+                "source": {
+                    "required": True, "type": str,
+                    "validator": lambda x: (
+                        None if os.path.isdir(x) else 
+                        werkzeug.exceptions.NotFound(
+                            "No such directory: {}".format(x))) },
+                "destination": {
+                    "required": True, "type": str },
+                "zip": {
+                    "required": False, "type": bool, "default": True },
+                "pretty-print": {
+                    "required": False, "type": bool, "default": False }
+            })
         
-        source = data.get("source")
-        if source is None:
-            raise werkzeug.exceptions.BadRequest("Missing source")
-        if not os.path.isdir(source):
-            raise werkzeug.exceptions.NotFound("No such directory: {}".format(source))
+        arguments = [data["source"], data["destination"]]
+        if data["zip"]:
+            arguments.append("--zip")
+        if data["pretty-print"]:
+            arguments.append("--pretty-print")
         
-        destination = data.get("destination")
-        if destination is None:
-            raise werkzeug.exceptions.BadRequest("Missing destination")
+        return self._run(["dicom2nifti"]+arguments)
+    
+    def _parse_request(self, data, parser):
+        """ Parse and validate the data passed to a request. The data must be
+            a name-value dictionary, and the parser must be a dictionnary 
+            mapping arguments name to:
+            - "required": whether or not the argument is required. Required.
+            - "type": type of the argument. Required.
+            - "validator": validation function. Must return None if the result
+              is valid and an exception object if not. Optional.
+            - "default": default value if the argument is not provided. Required
+              if argument is not required, ignored otherwise.
+        """
         
-        return self._run(["dicom2nifti", "-z", source, destination])
+        for name, items in parser.items():
+            if items["required"] and name not in data:
+                raise werkzeug.exceptions.BadRequest("Missing {}".format(name))
+            elif not items["required"]:
+                data.setdefault(name, items["default"])
+            
+            if not isinstance(data[name], items["type"]):
+                raise werkzeug.exceptions.BadRequest(
+                    "Wrong type for {}".format(name))
+            
+            if "validator" in items:
+                errors = items["validator"](data[name])
+                if errors is not None:
+                    raise errors
     
     def _run(self, *args):
         try:
