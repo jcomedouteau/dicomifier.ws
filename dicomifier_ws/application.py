@@ -60,13 +60,13 @@ class Application(object):
                     "required": False, "type": bool, "default": False }
             })
         
-        arguments = ["convert", data["source"], data["destination"]]
+        arguments = ["to-dicom", "convert", data["source"], data["destination"]]
         if data["dicomdir"]:
             arguments.append("--dicomdir")
         if data["multiframe"]:
             arguments.append("--multiframe")
         
-        return self._run(["dicomifier to-dicom"]+arguments)
+        return self._run(["dicomifier"]+arguments)
     
     def dicom2nifti(self, request):
         data = json.loads(request.get_data().decode())
@@ -86,13 +86,13 @@ class Application(object):
                     "required": False, "type": bool, "default": False }
             })
         
-        arguments = [data["source"], data["destination"]]
+        arguments = ["to-nifti",data["source"], data["destination"]]
         if data["zip"]:
             arguments.append("--zip")
         if data["pretty-print"]:
             arguments.append("--pretty-print")
         
-        return self._run(["dicomifier to-nifti"]+arguments)
+        return self._run(["dicomifier"]+arguments)
     
     def _parse_request(self, data, parser):
         """ Parse and validate the data passed to a request. The data must be
