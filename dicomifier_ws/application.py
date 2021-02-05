@@ -66,7 +66,7 @@ class Application(object):
         if data["multiframe"]:
             arguments.append("--multiframe")
         
-        return self._run(["bruker2dicom"]+arguments)
+        return self._run(["dicomifier to-dicom"]+arguments)
     
     def dicom2nifti(self, request):
         data = json.loads(request.get_data().decode())
@@ -92,7 +92,7 @@ class Application(object):
         if data["pretty-print"]:
             arguments.append("--pretty-print")
         
-        return self._run(["dicom2nifti"]+arguments)
+        return self._run(["dicomifier to-nifti"]+arguments)
     
     def _parse_request(self, data, parser):
         """ Parse and validate the data passed to a request. The data must be
